@@ -45,7 +45,6 @@ export const WeatherBackgroundVideo: React.FC<WeatherBackgroundVideoProps> = ({
       {previousVideoUrl && isTransitioning && (
         <video
           ref={previousVideoRef}
-          src={previousVideoUrl}
           autoPlay
           loop
           muted
@@ -55,14 +54,16 @@ export const WeatherBackgroundVideo: React.FC<WeatherBackgroundVideoProps> = ({
             opacity: Math.max(0, 1 - transitionProgress),
             filter: 'brightness(0.92) contrast(1.04)',
           }}
-        />
+        >
+          <source src={previousVideoUrl.replace('.mp4', '.webm')} type="video/webm" />
+          <source src={previousVideoUrl} type="video/mp4" />
+        </video>
       )}
 
       {/* 2. Current Video (Fading In smoothly) */}
       <video
         ref={currentVideoRef}
         key={currentVideoUrl}
-        src={currentVideoUrl}
         poster={posterUrl}
         autoPlay
         loop
@@ -73,7 +74,10 @@ export const WeatherBackgroundVideo: React.FC<WeatherBackgroundVideoProps> = ({
           opacity: isTransitioning ? transitionProgress : 1,
           filter: 'brightness(0.92) contrast(1.04)',
         }}
-      />
+      >
+        <source src={currentVideoUrl.replace('.mp4', '.webm')} type="video/webm" />
+        <source src={currentVideoUrl} type="video/mp4" />
+      </video>
 
       {/* 3. Atmospheric Procedural Rain Streaks Canvas on Glass Overlay */}
       {isRaining && <RainGlassCanvas />}
