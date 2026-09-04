@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchLiveWeather, DEFAULT_COMPARISON_CITIES } from './services/weatherApi.ts';
 import { FullWeatherData, CityForecast } from './types/weather.ts';
-import { WeatherBackgroundShader } from './components/WeatherBackgroundShader.tsx';
+import { WeatherBackgroundVideo } from './components/WeatherBackgroundVideo.tsx';
 import { LeftSidebar } from './components/LeftSidebar.tsx';
 import { RightHeroContent } from './components/RightHeroContent.tsx';
 import { Loader2 } from 'lucide-react';
@@ -11,27 +11,35 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Background Shader Transitions
-  const [currentBg, setCurrentBg] = useState<string>('/weather-bg/reference_original.webp');
-  const [prevBg, setPrevBg] = useState<string>('/weather-bg/reference_original.webp');
+  // Background Video Transitions
+  const [currentVideo, setCurrentVideo] = useState<string>('/weather-videos/storm_heavy_rain_day.mp4');
+  const [prevVideo, setPrevVideo] = useState<string>('/weather-videos/storm_heavy_rain_day.mp4');
+  const [currentPoster, setCurrentPoster] = useState<string>('/weather-bg/storm_heavy_rain_day.webp');
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
   const [transitionProgress, setTransitionProgress] = useState<number>(1.0);
 
-  // Trigger smooth transition to new weather background
-  const changeBackground = (newBgUrl: string) => {
-    if (newBgUrl === currentBg) return;
-    setPrevBg(currentBg);
-    setCurrentBg(newBgUrl);
+  // Trigger smooth transition to new weather video
+  const changeBackgroundVideo = (assetId: string) => {
+    const newVideoUrl = `/weather-videos/${assetId}.mp4`;
+    const newPosterUrl = `/weather-bg/${assetId}.webp`;
+
+    if (newVideoUrl === currentVideo) return;
+
+    setPrevVideo(currentVideo);
+    setCurrentVideo(newVideoUrl);
+    setCurrentPoster(newPosterUrl);
     setIsTransitioning(true);
     setTransitionProgress(0.0);
 
     const startTime = performance.now();
-    const duration = 1200; // 1.2s video-smooth transition
+    const duration = 1000; // 1.0s video cross-dissolve
 
     const animateTransition = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(1.0, elapsed / duration);
-      setTransitionProgress(progress);
+      // Quintic ease out
+      const easeProgress = 1 - Math.pow(1 - progress, 4);
+      setTransitionProgress(easeProgress);
 
       if (progress < 1.0) {
         requestAnimationFrame(animateTransition);
@@ -56,9 +64,8 @@ export const App: React.FC = () => {
       const data = await fetchLiveWeather(lat, lon, cityName, country);
       setWeather(data);
 
-      // Determine background url
-      const bgUrl = `/weather-bg/${data.condition.bgAssetId}.webp`;
-      changeBackground(bgUrl);
+      // Determine video asset id
+      changeBackgroundVideo(data.condition.bgAssetId);
     } catch (err: any) {
       console.error('Failed to load weather:', err);
       setError('Unable to fetch live meteorological telemetry.');
@@ -68,7 +75,7 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    // Initial load for Oklahoma City (as in the reference design)
+    // Initial load for Oklahoma City (as in reference design)
     loadWeatherData(35.4676, -97.5164, 'Oklahoma City', 'USA');
   }, []);
 
@@ -114,20 +121,20 @@ export const App: React.FC = () => {
 
       {/* Main Glassmorphic Container Card (approx 1280px x 760px) */}
       <main className="relative z-20 w-full max-w-[1280px] min-h-[720px] rounded-[30px] border border-white/15 bg-[#121316]/60 shadow-[0_24px_64px_rgba(0,0,0,0.7),0_2px_8px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
-        {/* WebGL2 Dynamic Shader Background Layer */}
-        <WeatherBackgroundShader
-          currentBgUrl={currentBg}
-          previousBgUrl={prevBg}
+        {/* Cinematic Looping Video Background Layer with Smooth Dissolve */}
+        <WeatherBackgroundVideo
+          currentVideoUrl={currentVideo}
+          previousVideoUrl={prevVideo}
           isTransitioning={isTransitioning}
           transitionProgress={transitionProgress}
-          weatherType={weather?.condition.label || 'Storm'}
+          posterUrl={currentPoster}
           isRaining={weather ? weather.current.weatherCode >= 51 && weather.current.weatherCode <= 99 : true}
         />
 
         {loading && !weather ? (
           <div className="relative z-30 flex-1 flex flex-col items-center justify-center min-h-[500px]">
             <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-3" />
-            <span className="text-xs tracking-widest uppercase text-white/70">Connecting Meteorologisk Satellites...</span>
+            <span className="text-xs tracking-widest uppercase text-white/70">Connecting Meteorological Satellites...</span>
           </div>
         ) : weather ? (
           <>
